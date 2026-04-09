@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manus Tea 智能手搖飲 - Agent 系統展示</title>
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            /* Indigo */
+            --primary-light: #818cf8;
+            --bg-dark: #0f172a;
+            /* Slate 900 */
+            --bg-panel: #1e293b;
+            /* Slate 800 */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #10b981;
+            /* Emerald */
+            --warn: #f59e0b;
+            /* Amber */
+            --error: #ef4444;
+            /* Red */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #0b1120;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary-light);
+        }
+
+        .layout-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Panel - User Interface */
+        .user-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #334155;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 12px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg.bot {
+            align-self: flex-start;
+            background: var(--bg-panel);
+            border-bottom-left-radius: 2px;
+            border: 1px solid #334155;
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            background: var(--primary);
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-input {
+            padding: 1rem 1.5rem;
+            background: rgba(15, 23, 42, 0.9);
+            border-top: 1px solid #334155;
+        }
+
+        form {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary-light);
+        }
+
+        button {
+            padding: 0 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-light);
+        }
+
+        /* Right Panel - Agent System Console */
+        .system-panel {
+            width: 450px;
+            background-color: #0b1120;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .system-header {
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .system-content {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid #334155;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .log-time {
+            color: #64748b;
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .badge.workflow {
+            background: #312e81;
+            color: #a5b4fc;
+        }
+
+        .badge.rule {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+
+        .badge.skill {
+            background: #14532d;
+            color: #86efac;
+        }
+
+        .badge.agent {
+            background: #701a75;
+            color: #f0abfc;
+        }
+
+        .widget-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+        }
+
+        .card {
+            background: var(--bg-panel);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .card-val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin-top: 0.5rem;
+        }
+
+        .card-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Hide scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1><i data-lucide="coffee"></i> Manus Tea 智能飲品大師</h1>
+        <div>Agent Architecture Demo v1.0</div>
+    </header>
+
+    <div class="layout-container">
+        <!-- User Chat Panel -->
+        <div class="user-panel">
+            <div class="chat-header">
+                <div class="avatar"><i data-lucide="bot"></i></div>
+                <div>
+                    <h3 style="font-size: 1.1rem; font-weight: 500;">飲料店全能店員</h3>
+                    <span style="font-size: 0.8rem; color: var(--accent);">● 線上協助中</span>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chat">
+                <!-- Chat messages -->
+            </div>
+
+            <div class="chat-input">
+                <form id="chat-form">
+                    <input type="text" id="userInput" placeholder="輸入您的需求，例如：我要一杯熱珍珠奶茶" autocomplete="off">
+                    <button type="submit">發送 <i data-lucide="send" size="18"></i></button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Agent System Panel -->
+        <div class="system-panel">
+            <div class="system-header">
+                <i data-lucide="terminal"></i> 系統監控大廳 (Agent System Console)
+            </div>
+
+            <div class="widget-cards">
+                <div class="card">
+                    <div class="card-label">目前工作節點</div>
+                    <div class="card-val" id="node-val">greet</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">訂單總額</div>
+                    <div class="card-val" id="price-val">$0</div>
+                </div>
+            </div>
+
+            <div class="system-content" id="sys-log">
+                <!-- Logs -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const chat = document.getElementById('chat');
+        const sysLog = document.getElementById('sys-log');
+        const nodeVal = document.getElementById('node-val');
+        const priceVal = document.getElementById('price-val');
+        const chatForm = document.getElementById('chat-form');
+        const input = document.getElementById('userInput');
+
+        // Agent Context State
+        let agentState = {
+            workflowNode: 'greet_customer',
+            order: {
+                item: null, temp: null, sweet: null, toppings: [], price: 0
+            },
+            stock: { pearl: true } // Initially false or true? Let's make pearl true for cold, but out of stock once if we want to demo.
+        };
+
+        // Initialize
+        addSysLog('agent', 'System Initialized. Loading modules...', 'SYSTEM');
+        addSysLog('workflow', 'Loaded workflow: beverage_ordering_workflow', 'WORKFLOW');
+        addSysLog('rule', 'Loaded rule: hot_drink_pearl_rule', 'RULE');
+        addSysLog('skill', 'Loaded skill: calculate_price', 'SKILL');
+
+        setTimeout(() => {
+            updateNode('greet_customer');
+            addBotMessage("您好！我是 Manus Tea 全能店員。請問今天想點些什麼？");
+        }, 1000);
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+
+            addUserMessage(text);
+            input.value = '';
+
+            // Process Intent delay
+            setTimeout(() => processInput(text), 600);
+        });
+
+        // The Brain
+        function processInput(text) {
+            addSysLog('agent', `User input received: "${text}"`, 'NLU');
+            const lower = text.toLowerCase();
+            updateNode('process_order');
+
+            if (lower.includes('結帳') || lower.includes('好') && agentState.workflowNode === 'confirming') {
+                updateNode('order_completed');
+                addSysLog('workflow', `Order dispatched to kitchen. Total: $${agentState.order.price}`, 'EXECUTE');
+                addBotMessage(`已收到您的確認！您的訂單已送出，總計 ${agentState.order.price} 元。請稍候取餐。`);
+                return;
+            }
+
+            // NLP Parsing Mock
+            let isHot = lower.includes('熱');
+            let hasPearl = lower.includes('珍珠');
+            let hasPudding = lower.includes('布丁');
+
+            agentState.order.temp = isHot ? 'HOT' : 'COLD';
+            if (lower.includes('珍奶') || lower.includes('珍珠奶茶')) {
+                agentState.order.item = '奶茶';
+                hasPearl = true;
+            } else if (lower.includes('奶茶')) {
+                agentState.order.item = '奶茶';
+            } else if (lower.includes('紅茶')) {
+                agentState.order.item = '紅茶';
+            }
+
+            if (hasPearl && !agentState.order.toppings.includes('珍珠')) agentState.order.toppings.push('珍珠');
+            if (hasPudding && !agentState.order.toppings.includes('布丁')) agentState.order.toppings.push('布丁');
+
+            // --- RULE CHECK ---
+            addSysLog('rule', 'Checking rules for current order state...', 'VALIDATE');
+            if (agentState.order.temp === 'HOT' && agentState.order.toppings.includes('珍珠')) {
+                addSysLog('rule', 'Triggered hot_drink_pearl_rule! Action: Reject topping.', 'TRIGGER');
+                agentState.order.toppings = agentState.order.toppings.filter(t => t !== '珍珠'); // remove
+                updateNode('agent_suggestion');
+                addBotMessage("抱歉，根據我們的品質規定，熱飲不能加珍珠喔，因為會影響口感。請問您想換成其他配料（例如布丁）還是維持不加料呢？");
+                return;
+            }
+
+            // --- STOCK CHECK ---
+            addSysLog('workflow', 'Checking inventory...', 'VALIDATE');
+            if (hasPearl && !agentState.stock.pearl) {
+                addSysLog('workflow', 'Inventory check failed: pearl out of stock.', 'ERROR');
+                updateNode('agent_suggestion');
+                addBotMessage("非常抱歉，珍珠目前已經售罄了。請問您想換成布丁或椰果嗎？");
+                agentState.stock.pearl = true; // Refill stock after first apology for demo
+                return;
+            }
+
+            // --- CALCULATE PRICE ---
+            updateNode('calculate_price');
+            addSysLog('skill', 'Invoking calculate_price skill...', 'EXECUTE');
+            let price = 0;
+            if (agentState.order.item === '奶茶') price = 50;
+            else if (agentState.order.item === '紅茶') price = 40;
+            else price = 40;
+
+            let toppingCost = agentState.order.toppings.length * 10;
+            price += toppingCost;
+            agentState.order.price = price;
+
+            addSysLog('skill', `Calculation done. Base: $${price - toppingCost}, Toppings: $${toppingCost}, Total: $${price}`, 'RESULT');
+            priceVal.innerText = '$' + price;
+
+            // --- CONFIRM ---
+            updateNode('confirming');
+            let toppingText = agentState.order.toppings.length > 0 ? `加${agentState.order.toppings.join('、')}` : '不加料';
+            let tempText = agentState.order.temp === 'HOT' ? '熱' : '冰';
+
+            addBotMessage(`好的，為您準備一杯 ${tempText} 的 ${agentState.order.item || '飲料'}，${toppingText}。這樣總共是 ${price} 元。請問確認點單並結帳嗎？`);
+        }
+
+        // UI Helpers
+        function addUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'msg user';
+            div.innerText = text;
+            chat.appendChild(div);
+            scrollChat();
+        }
+
+        function addBotMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'msg bot';
+            div.innerText = text;
+            chat.appendChild(div);
+            scrollChat();
+        }
+
+        function scrollChat() {
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function addSysLog(type, text, actionLabel) {
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            div.innerHTML = `
+                <div class="log-time">${time}</div>
+                <div><span class="badge ${type}">${actionLabel}</span> ${text}</div>
+            `;
+            sysLog.appendChild(div);
+            sysLog.scrollTop = sysLog.scrollHeight;
+        }
+
+        function updateNode(nodeName) {
+            agentState.workflowNode = nodeName;
+            nodeVal.innerText = nodeName;
+            nodeVal.style.color = '#10b981';
+            setTimeout(() => nodeVal.style.color = 'var(--primary-light)', 300);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天下茶屋 - 智能端</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --primary: #059669; --bg: #f3f4f6; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans TC',sans-serif; }
+        body { background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        .mobile-app {
+            width: 375px; height: 812px;
+            background: #fafafa; border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column;
+            overflow: hidden; position: relative; border: 8px solid #1f2937;
+        }
+
+        /* Views */
+        .view { display: none; flex-direction: column; height: 100%; flex: 1; overflow: hidden; background: #fafafa; }
+        .view.active { display: flex; }
+        .view-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+        /* General Header */
+        .header { background: white; padding: 3rem 1.5rem 1rem; text-align: center; font-weight: bold; font-size: 1.2rem; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.02);}
+        
+        /* Menu Specific */
+        .menu-list { padding: 1rem; }
+        .drink-item { background: white; border-radius: 12px; padding: 1rem; display: flex; gap: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); align-items: center; cursor: pointer; transition: transform 0.1s;}
+        .drink-item:active { transform: scale(0.98); }
+        .drink-img { width: 80px; height: 80px; border-radius: 8px; background: #e5e7eb; object-fit: cover;}
+        .drink-info { flex: 1; }
+        .drink-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 0.2rem;}
+        .drink-desc { color: #6b7280; font-size: 0.8rem; line-height: 1.4; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
+        .drink-price { font-weight: bold; color: var(--primary); }
+
+        /* Customization Modal (Overlays over the app) */
+        .modal { position: absolute; top: 100%; left: 0; width: 100%; height: 100%; background: white; z-index: 100; transition: top 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column;}
+        .modal.open { top: 0; }
+        .modal-header { padding: 3rem 1.5rem 1rem; display: flex; align-items: center; border-bottom: 1px solid #e5e7eb; font-weight: bold; font-size: 1.1rem; background: white;}
+        .btn-close { background: none; border: none; cursor: pointer; color: #374151; margin-right: 1rem; display: flex; align-items: center;}
+        .modal-body { flex: 1; overflow-y: auto; padding: 1.5rem; padding-bottom: 6rem; background: #fafafa;}
+        .modal-cover { width: 100%; height: 200px; border-radius: 12px; object-fit: cover; margin-bottom: 1.5rem; background: #eee;}
+        
+        .section-title { font-weight: bold; margin: 1.5rem 0 0.8rem; color: #374151; display:flex; justify-content:space-between;}
+        .required-badge { background: #fef2f2; color: #ef4444; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: normal;}
+        
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .option { background: white; border: 1px solid #e5e7eb; padding: 0.8rem; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; font-size: 0.95rem; display:flex; justify-content:center; align-items:center; gap:0.2rem;}
+        .option.selected { border-color: var(--primary); background: #ecfdf5; color: var(--primary); font-weight: bold; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.1);}
+        .option-price { font-size: 0.8rem; opacity: 0.7; font-weight: normal;}
+
+        .alert-box { display: none; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 1rem; border-radius: 8px; margin-top: 1.5rem; font-size: 0.9rem; align-items: flex-start; gap: 0.5rem;}
+        .alert-box.show { display: flex; animation: shake 0.4s ease;}
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        /* Sticky Bottom Bar in Modal calculating price */
+        .modal-bottom { position: absolute; bottom: 0; left: 0; width: 100%; padding: 1rem 1.5rem 2rem; background: white; border-top: 1px solid #e5e7eb; box-shadow: 0 -4px 10px rgba(0,0,0,0.05);}
+        .btn-add { display:flex; justify-content:space-between; align-items:center; width:100%; padding:1rem 1.5rem; border-radius:50px; background:#111827; color:white; border:none; font-weight:bold; font-size: 1.1rem;}
+
+        /* Navbar */
+        .bottom-nav { background: white; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-around; padding: 0.8rem 0 1.5rem; flex-shrink: 0; z-index: 5;}
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #9ca3af; font-size: 0.75rem; cursor: pointer;}
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+        
+        /* Placeholder for empty states */
+        .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#9ca3af; padding: 2rem; text-align:center;}
+        
+    </style>
+</head>
+<body>
+    <div class="mobile-app">
+        
+        <!-- View 2: Feature-Rich Menu (Now Default) -->
+        <div id="view-2" class="view active">
+            <div class="header">天下茶屋 - 菜單點餐</div>
+            <div class="view-content" style="padding: 0; background: #f3f4f6;">
+                <div class="menu-list">
+                    <!-- Drink Item 1 -->
+                    <div class="drink-item" onclick="openDrinkModal('經典珍珠奶茶', 50, 'https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?auto=format&fit=crop&w=400&q=80')">
+                        <div class="drink-info">
+                            <div class="drink-name">經典珍珠奶茶</div>
+                            <div class="drink-desc">香醇高山紅茶搭配濃郁奶香，含預設黑糖珍珠。</div>
+                            <div class="drink-price">$50 起</div>
+                        </div>
+                        <img class="drink-img" src="https://images.unsplash.com/photo-1558160074-4d7d8bdf4256?auto=format&fit=crop&w=400&q=80" alt="珍奶">
+                    </div>
+
+                    <!-- Drink Item 2 -->
+                    <div class="drink-item" onclick="openDrinkModal('極品高山紅茶', 35, 'https://images.unsplash.com/photo-1576092762791-dd9e2220c4af?auto=format&fit=crop&w=400&q=80')">
+                        <div class="drink-info">
+                            <div class="drink-name">極品高山紅茶</div>
+                            <div class="drink-desc">嚴選台灣高山茶葉，茶湯紅潤，自帶獨特果香。</div>
+                            <div class="drink-price">$35 起</div>
+                        </div>
+                        <img class="drink-img" src="https://images.unsplash.com/photo-1576092762791-dd9e2220c4af?auto=format&fit=crop&w=400&q=80" alt="紅茶">
+                    </div>
+
+                    <!-- Drink Item 3 -->
+                    <div class="drink-item" onclick="openDrinkModal('翡翠檸檬綠茶', 45, 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80')">
+                        <div class="drink-info">
+                            <div class="drink-name">翡翠檸檬綠茶</div>
+                            <div class="drink-desc">新鮮屏東檸檬原汁搭配茉香綠茶，酸甜解膩。</div>
+                            <div class="drink-price">$45 起</div>
+                        </div>
+                        <img class="drink-img" src="https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80" alt="檸檬綠">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customization Modal -->
+        <div id="custom-modal" class="modal">
+            <div class="modal-header">
+                <button class="btn-close" onclick="closeDrinkModal()"><i data-lucide="x"></i></button>
+                <div id="modal-title">飲品客製化</div>
+            </div>
+            <div class="modal-body">
+                <img id="modal-img" class="modal-cover" src="" alt="cover">
+                
+                <h2 id="modal-drink-name" style="font-size:1.6rem; margin-bottom:0.5rem; color:#111827;">飲品名稱</h2>
+                <div style="font-size:1.1rem; color:var(--primary); font-weight:bold; margin-bottom:1.5rem;" id="modal-base-price">$0</div>
+
+                <!-- Temperature -->
+                <div class="section-title">
+                    <span>冰塊 / 溫度</span>
+                    <span class="required-badge">必填</span>
+                </div>
+                <div class="options-grid" id="temp-group">
+                    <div class="option selected" onclick="selectOption('temp', '正常冰', false, this)">正常冰</div>
+                    <div class="option" onclick="selectOption('temp', '少冰', false, this)">少冰</div>
+                    <div class="option" onclick="selectOption('temp', '去冰', false, this)">去冰</div>
+                    <div class="option" onclick="selectOption('temp', '熱飲', true, this)">熱飲 (Hot)</div>
+                </div>
+
+                <!-- Sweetness -->
+                <div class="section-title">
+                    <span>甜度</span>
+                    <span class="required-badge">必填</span>
+                </div>
+                <div class="options-grid" id="sweet-group">
+                    <div class="option selected" onclick="selectOption('sweet', '正常糖', false, this)">正常糖</div>
+                    <div class="option" onclick="selectOption('sweet', '半糖', false, this)">半糖</div>
+                    <div class="option" onclick="selectOption('sweet', '微糖', false, this)">微糖</div>
+                    <div class="option" onclick="selectOption('sweet', '無糖', false, this)">無糖</div>
+                </div>
+
+                <!-- Toppings -->
+                <div class="section-title">
+                    <span>加配料 (可複選)</span>
+                </div>
+                <div class="options-grid" id="topping-group">
+                    <!-- Added ID to pearl for rule tracking -->
+                    <div class="option topping-opt" id="topping-pearl" onclick="toggleTopping('珍珠', 10, this)">
+                        珍珠 <span class="option-price">+$10</span>
+                    </div>
+                    <div class="option topping-opt" onclick="toggleTopping('布丁', 15, this)">
+                        布丁 <span class="option-price">+$15</span>
+                    </div>
+                    <div class="option topping-opt" onclick="toggleTopping('椰果', 10, this)">
+                        椰果 <span class="option-price">+$10</span>
+                    </div>
+                    <div class="option topping-opt" onclick="toggleTopping('鮮奶', 20, this)">
+                        升級鮮奶 <span class="option-price">+$20</span>
+                    </div>
+                </div>
+
+                <!-- Rule Alert Box -->
+                <div class="alert-box" id="ruleAlert">
+                    <i data-lucide="shield-alert" style="flex-shrink: 0; margin-top:2px;"></i> 
+                    <div>
+                        <strong>規則限制：無法加珍珠</strong><br>
+                        抱歉，為維持最佳口感，熱飲無法添加珍珠。系統已自動為您取消珍珠選項。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-bottom">
+                <button class="btn-add" onclick="addToCart()">
+                    <span>加入購物車</span>
+                    <span id="calc-total">$0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Other Views (Stubs to keep bottom nav logical) -->
+        <div id="view-1" class="view">
+            <div class="header">文字客服</div>
+            <div class="empty-state">
+                <i data-lucide="bot" size="48" style="margin-bottom:1rem; opacity:0.5;"></i>
+                <p>智能助理功能請專注於「菜單點餐」介面體驗</p>
+            </div>
+        </div>
+        <div id="view-3" class="view">
+            <div class="header">購物車明細</div>
+            <div class="empty-state">
+                <i data-lucide="shopping-bag" size="48" style="margin-bottom:1rem; opacity:0.5;"></i>
+                <p id="cart-empty-text">您的購物車是空的</p>
+            </div>
+        </div>
+        <div id="view-4" class="view">
+            <div class="header">訂單進度</div>
+            <div class="empty-state">
+                <i data-lucide="map-pin" size="48" style="margin-bottom:1rem; opacity:0.5;"></i>
+                <p>尚無進行中的訂單</p>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item" onclick="switchTab(1)" id="tab-1"><i data-lucide="message-square"></i><span>智能客服</span></div>
+            <div class="nav-item active" onclick="switchTab(2)" id="tab-2"><i data-lucide="menu"></i><span>菜單點餐</span></div>
+            <div class="nav-item" onclick="switchTab(3)" id="tab-3"><i data-lucide="shopping-cart"></i><span id="cart-badge">結帳明細</span></div>
+            <div class="nav-item" onclick="switchTab(4)" id="tab-4"><i data-lucide="map-pin"></i><span>訂單進度</span></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        
+        function switchTab(id) {
+            document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            document.getElementById('view-' + id).classList.add('active');
+            document.getElementById('tab-' + id).classList.add('active');
+        }
+
+        // State Management for Current Ordering Drink
+        let currentDrink = {
+            name: '',
+            basePrice: 0,
+            temp: '正常冰',
+            isHot: false,
+            sweet: '正常糖',
+            toppings: [] // array of objects {name, price}
+        };
+
+        function openDrinkModal(name, price, img) {
+            // Reset state
+            currentDrink = { name, basePrice: price, temp:'正常冰', isHot:false, sweet:'正常糖', toppings:[] };
+            
+            // UI Reset
+            document.getElementById('modal-drink-name').innerText = name;
+            document.getElementById('modal-base-price').innerText = '$' + price;
+            document.getElementById('modal-img').src = img;
+            
+            // Reset selections visually
+            document.querySelectorAll('.option').forEach(el => el.classList.remove('selected'));
+            document.querySelector('#temp-group .option').classList.add('selected'); // First child
+            document.querySelector('#sweet-group .option').classList.add('selected'); // First child
+            document.getElementById('ruleAlert').classList.remove('show');
+            
+            updatePrice();
+            // Open animation
+            document.getElementById('custom-modal').classList.add('open');
+        }
+
+        function closeDrinkModal() {
+            document.getElementById('custom-modal').classList.remove('open');
+        }
+
+        // Single Select (Temp, Sweet)
+        function selectOption(group, value, isHotFlag, el) {
+            document.querySelectorAll(`#${group}-group .option`).forEach(n => n.classList.remove('selected'));
+            el.classList.add('selected');
+
+            if (group === 'temp') {
+                currentDrink.temp = value;
+                currentDrink.isHot = isHotFlag;
+            } else if (group === 'sweet') {
+                currentDrink.sweet = value;
+            }
+            applyRules();
+        }
+
+        // Multi Select (Toppings)
+        function toggleTopping(name, price, el) {
+            const index = currentDrink.toppings.findIndex(t => t.name === name);
+            if (index > -1) {
+                // Remove
+                currentDrink.toppings.splice(index, 1);
+                el.classList.remove('selected');
+            } else {
+                // Add
+                currentDrink.toppings.push({name, price});
+                el.classList.add('selected');
+            }
+            applyRules();
+        }
+
+        // Core Rule Engine Implementation
+        function applyRules() {
+            const ruleAlert = document.getElementById('ruleAlert');
+            const pearlIndex = currentDrink.toppings.findIndex(t => t.name === '珍珠');
+            const hasPearl = pearlIndex > -1;
+
+            if (currentDrink.isHot && hasPearl) {
+                // RULE TRIGGERED: Hot Drink cannot have Pearl
+                ruleAlert.classList.add('show');
+                
+                // Enforce Rule: Remove pearl from state and visually uncheck it
+                currentDrink.toppings.splice(pearlIndex, 1);
+                setTimeout(() => {
+                    document.getElementById('topping-pearl').classList.remove('selected');
+                    updatePrice(); // Re-calculate price after removing
+                }, 800);
+            } else {
+                ruleAlert.classList.remove('show');
+            }
+
+            updatePrice();
+        }
+
+        // Core Skill Implementation (Calculate Price)
+        function updatePrice() {
+            let total = currentDrink.basePrice;
+            currentDrink.toppings.forEach(t => {
+                total += t.price;
+            });
+            document.getElementById('calc-total').innerText = '$' + total;
+        }
+
+        // Workflow Advance (Add to Cart logic)
+        let cartTotalItems = 0;
+        function addToCart() {
+            // Simplified logic: simulate adding and switch to cart view
+            cartTotalItems++;
+            let toppingNames = currentDrink.toppings.map(t=>t.name).join(', ') || '無加料';
+            
+            // In a real app this would populate the view-3 HTML.
+            document.getElementById('view-3').innerHTML = `
+                <div class="header">購物車明細</div>
+                <div class="view-content">
+                    <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid #e5e7eb; margin-bottom: 2rem;">
+                        <div style="font-weight:bold; font-size:1.1rem; display:flex; justify-content:space-between;">
+                            <span>${currentDrink.name}</span>
+                            <span>${document.getElementById('calc-total').innerText}</span>
+                        </div>
+                        <div style="color:#6b7280; font-size:0.85rem; margin-top:0.5rem; line-height:1.5;">
+                            ${currentDrink.temp} / ${currentDrink.sweet}<br>配料: ${toppingNames}
+                        </div>
+                    </div>
+                    <button style="display:block; width:100%; padding:1rem; border-radius:50px; background:var(--primary); color:white; border:none; font-weight:bold; font-size:1.1rem;" onclick="switchTab(4)">
+                        送出訂單
+                    </button>
+                </div>
+            `;
+            
+            closeDrinkModal();
+            
+            // Update Notification Badge conceptually (We just flash the tab name)
+            const cartTab = document.getElementById('cart-badge');
+            cartTab.style.color = '#ef4444';
+            setTimeout(()=> { cartTab.style.color = ''; }, 2000);
+            
+            // Optional: immediately route user to Cart or close modal
+            // switchTab(3);
+        }
+    </script>
+</body>
+</html>
